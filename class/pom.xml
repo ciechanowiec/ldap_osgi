@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>eu.ciechanowiec</groupId>
+        <artifactId>org.apache.directory.api_api-all</artifactId>
+        <version>2.1.1</version>
+        <relativePath>../pom.xml</relativePath>
+    </parent>
+
+    <artifactId>org.apache.directory.api_api-all_class</artifactId>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-resources-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>copy-license-and-readme-to-jar</id>
+                        <phase>process-resources</phase>
+                        <goals>
+                            <goal>copy-resources</goal>
+                        </goals>
+                        <configuration>
+                            <outputDirectory>${project.build.outputDirectory}</outputDirectory>
+                            <resources>
+                                <resource>
+                                    <directory>${project.basedir}/..</directory>
+                                    <includes>
+                                        <include>LICENSE.txt</include>
+                                        <include>README.adoc</include>
+                                        <include>README-docinfo.html</include>
+                                        <include>README-docinfo-footer.html</include>
+                                    </includes>
+                                    <!-- To enable variables in the resources files
+                                         (https://maven.apache.org/plugins/maven-resources-plugin/examples/filter.html): -->
+                                    <filtering>true</filtering>
+                                </resource>
+                            </resources>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>biz.aQute.bnd</groupId>
+                <artifactId>bnd-maven-plugin</artifactId>
+                <version>${bnd-maven-plugin.version}</version>
+                <executions>
+                    <execution>
+                        <id>bnd-process</id>
+                        <goals>
+                            <goal>bnd-process</goal>
+                        </goals>
+                        <configuration>
+                            <bnd><![CDATA[
+            Bundle-Category: utilities
+            Bundle-Description: ${project.description}
+            Bundle-DocURL: ${url}
+            Bundle-Name: ${project.parent.name}
+            Bundle-SymbolicName: ${project.groupId}.${project.parent.artifactId}
+            Bundle-Vendor: ${project.developer.name}
+            Bundle-Version: ${project.version}
+            Export-Package: !schema.*,org.apache.directory.*;-noimport:=true,org.dom4j.*;-noimport:=true,org.xmlpull.v1;-noimport:=true,antlr.*;-noimport:=true,org.apache.mina.*;-noimport:=true,org.apache.commons.pool2.*;-noimport:=true
+            Import-Package: com.sun.msv.datatype.*;resolution:=optional,javax.xml.bind.*;resolution:=optional;version="[2.0,3)",net.sf.cglib.proxy;resolution:=optional,org.gjt.xpp;resolution:=optional;version="[2,3)",org.jaxen.*;resolution:=optional;version="[1.1.6,2)",org.relaxng.datatype;resolution:=optional;version="[1,2)",sun.misc;resolution:=optional,org.slf4j;version="[1.7,2)",*
+            Private-Package: !org.slf4j.*,*
+            Require-Capability: osgi.ee;filter:="(&(osgi.ee=JavaSE)(version=${maven.compiler.release}))"
+                                            ]]></bnd>
+
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <version>3.1.2</version>
+                <configuration>
+                    <archive>
+                        <manifestFile>${project.build.outputDirectory}/META-INF/MANIFEST.MF</manifestFile>
+                    </archive>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+
+    <profiles>
+        <profile>
+            <id>copy-license-and-readme</id>
+            <activation>
+                <activeByDefault>true</activeByDefault>
+            </activation>
+            <properties>
+                <profile.active>true</profile.active>
+            </properties>
+        </profile>
+    </profiles>
+</project>
