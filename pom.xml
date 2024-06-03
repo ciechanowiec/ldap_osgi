@@ -252,6 +252,7 @@
                     </execution>
                 </executions>
                 <configuration>
+                    <encoding>ISO-8859-1</encoding>
                     <show>package</show>
                     <failOnError>false</failOnError>
                     <!-- The line below fixes a bug with search present probably only until JDK 13
