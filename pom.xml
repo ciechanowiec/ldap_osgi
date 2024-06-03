@@ -5,9 +5,8 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>eu.ciechanowiec</groupId>
-    <artifactId>org.apache.directory.api_api-all_parent</artifactId>
-    <version>2.1.1</version>
-    <packaging>pom</packaging>
+    <artifactId>org.apache.directory.api_api-all</artifactId>
+    <version>2.1.5</version>
 
     <name>Apache Directory LDAP API - OSGi Bundle</name>
     <description>Shaded OSGi bundle of Apache Directory LDAP API</description>
@@ -21,11 +20,6 @@
             <distribution>repo</distribution>
         </license>
     </licenses>
-
-    <modules>
-        <module>sources-and-javadoc</module>
-        <module>class</module>
-    </modules>
 
     <scm>
         <connection>scm:git:git@github.com:ciechanowiec/ldap_osgi.git</connection>
@@ -77,6 +71,7 @@
         <maven-install-plugin.version>3.1.2</maven-install-plugin.version>
         <nexus-staging-maven-plugin.version>1.7.0</nexus-staging-maven-plugin.version>
         <maven-gpg-plugin.version>3.2.4</maven-gpg-plugin.version>
+        <gmaven-plugin.version>1.5</gmaven-plugin.version>
     </properties>
 
     <dependencies>
@@ -98,38 +93,253 @@
     </dependencies>
 
     <build>
-        <finalName>${project.parent.artifactId}-${project.version}</finalName>
-        <pluginManagement>
-            <plugins>
-                <plugin>
-                    <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-install-plugin</artifactId>
-                    <version>${maven-install-plugin.version}</version>
-                    <configuration>
-                        <skip>true</skip>
-                    </configuration>
-                </plugin>
-                <plugin>
-                    <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-resources-plugin</artifactId>
-                    <version>${maven-resources-plugin.version}</version>
-                </plugin>
-                <plugin>
-                    <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-jar-plugin</artifactId>
-                    <version>${maven-jar-plugin.version}</version>
-                </plugin>
-                <plugin>
-                    <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-deploy-plugin</artifactId>
-                    <version>${maven-deploy-plugin.version}</version>
-                    <configuration>
-                        <skip>true</skip>
-                    </configuration>
-                </plugin>
-            </plugins>
-        </pluginManagement>
         <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-shade-plugin</artifactId>
+                <version>${maven-shade-plugin.version}</version>
+                <executions>
+                    <execution>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>shade</goal>
+                        </goals>
+                        <configuration>
+                            <shadedArtifactAttached>true</shadedArtifactAttached> <!--  Must stay not to override a jar created for bnd  -->
+                            <finalName>${project.artifactId}-${project.version}</finalName>
+                            <createSourcesJar>true</createSourcesJar>
+                            <outputDirectory>${project.build.directory}/shaded</outputDirectory>
+                            <artifactSet>
+                                <includes>
+                                    <include>*:*</include>
+                                </includes>
+                                <excludes>
+                                    <exclude>${project.groupId}:${project.artifactId}</exclude>
+                                </excludes>
+                            </artifactSet>
+                            <filters>
+                                <filter>
+                                    <artifact>*:*</artifact>
+                                    <excludes>
+                                        <exclude>META-INF/*.MF</exclude>
+                                        <exclude>META-INF/NOTICE.txt</exclude>
+                                        <exclude>META-INF/NOTICE</exclude>
+                                        <exclude>META-INF/LICENSE.txt</exclude>
+                                        <exclude>META-INF/LICENSE</exclude>
+                                        <exclude>META-INF/DEPENDENCIES</exclude>
+                                        <exclude>OSGI-INF/*</exclude>
+                                        <exclude>META-INF/versions/9/module-info.class</exclude>
+                                    </excludes>
+                                </filter>
+                            </filters>
+                        </configuration>
+                    </execution>
+                </executions>
+                <configuration>
+                    <createDependencyReducedPom>false</createDependencyReducedPom>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-resources-plugin</artifactId>
+                <version>${maven-resources-plugin.version}</version>
+                <executions>
+                    <execution>
+                        <id>copy-license-and-readme-to-jar</id>
+                        <phase>process-resources</phase>
+                        <goals>
+                            <goal>copy-resources</goal>
+                        </goals>
+                        <configuration>
+                            <outputDirectory>class/target/classes</outputDirectory>
+                            <resources>
+                                <resource>
+                                    <directory>${project.basedir}</directory>
+                                    <includes>
+                                        <include>LICENSE.txt</include>
+                                        <include>README.adoc</include>
+                                        <include>README-docinfo.html</include>
+                                        <include>README-docinfo-footer.html</include>
+                                    </includes>
+                                    <!-- To enable variables in the resources files
+                                         (https://maven.apache.org/plugins/maven-resources-plugin/examples/filter.html): -->
+                                    <filtering>true</filtering>
+                                </resource>
+                            </resources>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>biz.aQute.bnd</groupId>
+                <artifactId>bnd-maven-plugin</artifactId>
+                <version>${bnd-maven-plugin.version}</version>
+                <executions>
+                    <execution>
+                        <id>bnd-process</id>
+                        <goals>
+                            <goal>bnd-process</goal>
+                        </goals>
+                        <configuration>
+                            <bnd><![CDATA[
+                        Bundle-Category: utilities
+                        Bundle-Description: ${project.description}
+                        Bundle-DocURL: ${url}
+                        Bundle-Name: ${project.name}
+                        Bundle-SymbolicName: ${project.groupId}.${project.artifactId}
+                        Bundle-Vendor: ${project.developer.name}
+                        Bundle-Version: ${project.version}
+                        Export-Package: !schema.*,org.apache.directory.*;-noimport:=true,org.dom4j.*;-noimport:=true,org.xmlpull.v1;-noimport:=true,antlr.*;-noimport:=true,org.apache.mina.*;-noimport:=true,org.apache.commons.pool2.*;-noimport:=true
+                        Import-Package: com.sun.msv.datatype.*;resolution:=optional,javax.xml.bind.*;resolution:=optional;version="[2.0,3)",net.sf.cglib.proxy;resolution:=optional,org.gjt.xpp;resolution:=optional;version="[2,3)",org.jaxen.*;resolution:=optional;version="[1.1.6,2)",org.relaxng.datatype;resolution:=optional;version="[1,2)",sun.misc;resolution:=optional,org.slf4j;version="[1.7,2)",*
+                        Private-Package: !org.slf4j.*,*
+                        Require-Capability: osgi.ee;filter:="(&(osgi.ee=JavaSE)(version=${maven.compiler.release}))"
+                                                        ]]></bnd>
+
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <version>${maven-jar-plugin.version}</version>
+                <configuration>
+                    <archive>
+                        <manifestFile>${project.build.outputDirectory}/META-INF/MANIFEST.MF</manifestFile>
+                    </archive>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-dependency-plugin</artifactId>
+                <version>3.3.0</version>
+                <executions>
+                    <execution>
+                        <id>unpack-sources</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>unpack</goal>
+                        </goals>
+                        <configuration>
+                            <excludes>META-INF</excludes>
+                            <artifactItems>
+                                <artifactItem>
+                                    <groupId>${project.groupId}</groupId>
+                                    <artifactId>${project.artifactId}</artifactId>
+                                    <version>${project.version}</version>
+                                    <classifier>shaded-sources</classifier>
+                                    <outputDirectory>${project.build.directory}/extracted-sources</outputDirectory>
+                                </artifactItem>
+                            </artifactItems>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-javadoc-plugin</artifactId>
+                <version>${maven-javadoc-plugin.version}</version>
+                <executions>
+                    <execution>
+                        <id>put-javadoc-in-jar-archive</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>jar</goal>
+                        </goals>
+                        <configuration>
+                            <sourcepath>${project.build.directory}/extracted-sources</sourcepath>
+                        </configuration>
+                    </execution>
+                </executions>
+                <configuration>
+                    <show>package</show>
+                    <failOnError>false</failOnError>
+                    <!-- The line below fixes a bug with search present probably only until JDK 13
+                         (https://stackoverflow.com/questions/52326318/maven-javadoc-search-redirects-to-undefined-url) -->
+                    <additionalJOption>--no-module-directories</additionalJOption>
+                    <additionalJOption>--ignore-source-errors</additionalJOption>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-antrun-plugin</artifactId>
+                <version>1.8</version>
+                <executions>
+                    <execution>
+                        <id>remove-and-rename-shaded</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                        <configuration>
+                            <target>
+                                <copy file="${project.build.directory}/shaded/${project.build.finalName}-shaded-sources.jar"
+                                      tofile="${project.build.directory}/${project.build.finalName}-sources.jar"/>
+                                <delete dir="${project.build.directory}/shaded"/>
+                            </target>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>build-helper-maven-plugin</artifactId>
+                <version>${build-helper-maven-plugin.version}</version>
+                <executions>
+                    <execution>
+                        <id>attach-artifacts</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>attach-artifact</goal>
+                        </goals>
+                        <configuration>
+                            <artifacts>
+                                <artifact>
+                                    <file>${project.build.directory}/${project.build.finalName}-sources.jar</file>
+                                    <type>jar</type>
+                                    <classifier>sources</classifier>
+                                </artifact>
+                            </artifacts>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>timestamp-property</id>
+                        <goals>
+                            <goal>timestamp-property</goal>
+                        </goals>
+                        <configuration>
+                            <name>current.year</name>
+                            <pattern>yyyy</pattern>
+                            <locale>GB</locale>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.codehaus.gmaven</groupId>
+                <artifactId>gmaven-plugin</artifactId>
+                <version>${gmaven-plugin.version}</version>
+                <executions>
+                    <execution>
+                        <id>remove-primary-artefact</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>execute</goal>
+                        </goals>
+                        <configuration>
+                            <source>
+                            <![CDATA[
+                                import org.apache.maven.artifact.Artifact
+
+                                def attachedArtifacts = project.getAttachedArtifacts()
+                                def toRemove = attachedArtifacts.findAll { it.classifier?.contains("shaded") }
+                                attachedArtifacts.removeAll(toRemove)
+                                ]]>
+                        </source>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-enforcer-plugin</artifactId>
@@ -164,24 +374,63 @@
                     </execution>
                 </executions>
             </plugin>
-            <plugin>
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>build-helper-maven-plugin</artifactId>
-                <version>${build-helper-maven-plugin.version}</version>
-                <executions>
-                    <execution>
-                        <id>timestamp-property</id>
-                        <goals>
-                            <goal>timestamp-property</goal>
-                        </goals>
-                        <configuration>
-                            <name>current.year</name>
-                            <pattern>yyyy</pattern>
-                            <locale>GB</locale>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
         </plugins>
     </build>
+
+    <profiles>
+        <!-- Release procedure:
+        1. `mvn clean deploy -P release` -> will perform deploy and release
+        2. Add the following settings to ~/.m2/settings.xml:
+        ****
+        <settings>
+          <servers>
+            <server>
+              <id>ossrh</id>
+              <username>your-jira-id</username>
+              <password>your-jira-pwd</password>
+            </server>
+          </servers>
+        </settings>
+        ****
+        -->
+        <profile>
+            <id>release</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-deploy-plugin</artifactId>
+                        <configuration>
+                            <skip>false</skip>
+                        </configuration>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-gpg-plugin</artifactId>
+                        <version>${maven-gpg-plugin.version}</version>
+                        <executions>
+                            <execution>
+                                <id>sign-artifacts</id>
+                                <phase>verify</phase>
+                                <goals>
+                                    <goal>sign</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.sonatype.plugins</groupId>
+                        <artifactId>nexus-staging-maven-plugin</artifactId>
+                        <version>${nexus-staging-maven-plugin.version}</version>
+                        <extensions>true</extensions>
+                        <configuration>
+                            <serverId>ossrh</serverId>
+                            <nexusUrl>https://s01.oss.sonatype.org/</nexusUrl>
+                            <autoReleaseAfterClose>true</autoReleaseAfterClose>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
 </project>

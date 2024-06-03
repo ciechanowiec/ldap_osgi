@@ -28,7 +28,7 @@ This repository delivers a shaded OSGi bundle of https://github.com/apache/direc
 <dependency>
     <groupId>eu.ciechanowiec</groupId>
     <artifactId>org.apache.directory.api_api-all</artifactId>
-    <version>2.1.1</version>
+    <version>2.1.5</version>
 </dependency>
 ----
 . Maven coordinates for the original _Apache Directory LDAP API_:
@@ -38,7 +38,7 @@ This repository delivers a shaded OSGi bundle of https://github.com/apache/direc
 <dependency>
     <groupId>org.apache.directory.api</groupId>
     <artifactId>api-all</artifactId>
-    <version>2.1.1</version>
+    <version>2.1.5</version>
 </dependency>
 ----
 +
@@ -47,11 +47,11 @@ Contrary to the official https://github.com/apache/directory-ldap-api/blob/e6262
     Manifest-Version: 1.0
     Implementation-Title: Apache Directory API All
     Automatic-Module-Name: org.apache.directory.ldap.api.all
-    Implementation-Version: 2.1.1
+    Implementation-Version: 2.1.5
     Specification-Vendor: The Apache Software Foundation
     Specification-Title: Apache Directory API All
     Build-Jdk-Spec: 1.8
-    Created-By: Maven JAR Plugin 3.2.2
+    Created-By: Maven JAR Plugin 3.3.0
     Specification-Version: 2.1
     Implementation-Vendor: The Apache Software Foundation
 
